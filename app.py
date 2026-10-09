@@ -15,12 +15,13 @@ app.add_middleware(
 class SentimentRequest(BaseModel):
     sentences: list[str]
 
+
 POSITIVE = set("""
 love loved lovely like liked great excellent amazing awesome
 wonderful fantastic good happy joy joyful best beautiful perfect
 enjoy enjoyed delightful brilliant superb excited pleased success
 helpful impressive recommend fun glad satisfied positive kind
-friendly thankful excellent nice outstanding valuable better
+friendly thankful nice outstanding valuable better
 """.split())
 
 NEGATIVE = set("""
@@ -29,7 +30,7 @@ disappointed disappointing worst poor boring annoying annoyed
 ugly fail failed failure broken useless dislike painful frustrating
 frustrated unhappy miserable depressing disgusting regret problem
 problems wrong difficult negative stressful pathetic unfortunate
-inferior worse unpleasant scary scary
+inferior worse unpleasant horrendous
 """.split())
 
 NEGATIONS = {
@@ -37,6 +38,7 @@ NEGATIONS = {
     "wasn't", "don't", "doesn't", "didn't", "cannot",
     "can't", "couldn't", "won't", "wouldn't"
 }
+
 
 def classify(sentence: str) -> str:
     words = re.findall(r"[a-z]+(?:'[a-z]+)?", sentence.lower())
@@ -48,7 +50,11 @@ def classify(sentence: str) -> str:
             negate = 3
             continue
 
-        value = 1 if word in POSITIVE else -1 if word in NEGATIVE else 0
+        value = (
+            1 if word in POSITIVE
+            else -1 if word in NEGATIVE
+            else 0
+        )
 
         if value:
             score += -value if negate > 0 else value
@@ -62,12 +68,8 @@ def classify(sentence: str) -> str:
         return "sad"
     return "neutral"
 
-@app.get("/")
-async def root():
-    return {"message": "Batch Sentiment API is running"}
 
-@app.post("/sentiment")
-async def sentiment(request: SentimentRequest):
+def analyze(request: SentimentRequest):
     return {
         "results": [
             {
@@ -77,3 +79,18 @@ async def sentiment(request: SentimentRequest):
             for sentence in request.sentences
         ]
     }
+
+
+@app.get("/")
+async def root():
+    return {"message": "Batch Sentiment API is running"}
+
+
+@app.post("/")
+async def sentiment_root(request: SentimentRequest):
+    return analyze(request)
+
+
+@app.post("/sentiment")
+async def sentiment(request: SentimentRequest):
+    return analyze(request)
